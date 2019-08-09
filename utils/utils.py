@@ -72,14 +72,14 @@ def read_config(path):
         cfg = yaml.load(ymlfile)
 
     # Load environment from gym to set its params
-    print("env: ", cfg['env'])
-    env = gym.make(cfg['env'])
-    cfg['state_dims'] = env.observation_space.shape
-    cfg['state_bound_low'] = env.observation_space.low
-    cfg['state_bound_high'] = env.observation_space.high
-    cfg['action_dims'] = env.action_space.shape
-    cfg['action_bound_low'] = env.action_space.low
-    cfg['action_bound_high'] = env.action_space.high
-    del env
+    if cfg['env'].lower() != 'learntomove':
+        env = gym.make(cfg['env'])
+        cfg['state_dims'] = env.observation_space.shape[0]
+        cfg['state_bound_low'] = env.observation_space.low
+        cfg['state_bound_high'] = env.observation_space.high
+        cfg['action_dims'] = env.action_space.shape[0]
+        cfg['action_bound_low'] = env.action_space.low
+        cfg['action_bound_high'] = env.action_space.high
+        del env
 
     return cfg

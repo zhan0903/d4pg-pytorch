@@ -15,6 +15,15 @@ from utils.logger import Logger
 from utils.prioritized_experience_replay import create_replay_buffer
 
 
+def agent_process(config, actor_learner, global_episode, n_agent, log_dir, replay_queue, stop_agent_event):
+    agent = Agent(config=config,
+                  actor_learner=actor_learner,
+                  global_episode=global_episode,
+                  n_agent=n_agent,
+                  log_dir=log_dir)
+    agent.run(replay_queue, stop_agent_event)
+
+
 def sampler_worker(config, replay_queue, batch_queue, stop_agent_event,
                    global_episode, log_dir=''):
     """
@@ -94,18 +103,14 @@ def train(config_path, config=None):
     processes.append(p)
 
     # Learner (neural net training process)
-    learner = create_learner(config, batch_queue, log_dir=experiment_dir)
+    learner = create_learner(config, batch_queue, global_episode, log_dir=experiment_dir)
     p = torch_mp.Process(target=learner.run, args=(stop_agent_event,))
     processes.append(p)
 
     # Agents (exploration processes)
     for i in range(n_agents):
-        agent = Agent(config,
-                      actor_learner=learner.target_policy_net,
-                      global_episode=global_episode,
-                      n_agent=i,
-                      log_dir=experiment_dir)
-        p = torch_mp.Process(target=agent.run, args=(replay_queue, stop_agent_event))
+        p = torch_mp.Process(target=agent_process,
+                             args=(config, learner.target_policy_net, global_episode, i, experiment_dir, replay_queue, stop_agent_event))
         processes.append(p)
 
     for p in processes:

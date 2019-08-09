@@ -79,7 +79,7 @@ class PolicyNetwork(nn.Module):
 class LearnerD3PG(object):
     """Policy and value network update routine. """
 
-    def __init__(self, config, batch_queue, log_dir=''):
+    def __init__(self, config, batch_queue, global_episode, log_dir=''):
         """
         Args:
             config (dict): configuration
@@ -88,8 +88,8 @@ class LearnerD3PG(object):
         hidden_dim = config['dense_size']
         value_lr = config['critic_learning_rate']
         policy_lr = config['actor_learning_rate']
-        state_dim = config['state_dims'][0]
-        action_dim = config['action_dims'][0]
+        state_dim = config['state_dims']
+        action_dim = config['action_dims']
         self.device = config['device']
         self.max_frames = config['num_episodes_train']
         self.max_steps = config['max_ep_length']
@@ -99,6 +99,7 @@ class LearnerD3PG(object):
         self.gamma = config['discount_rate']
         self.tau = config['tau']
         self.log_dir = log_dir
+        self.global_episode = global_episode
 
         log_path = f"{log_dir}/learner.pkl"
         self.logger = Logger(log_path)
@@ -126,6 +127,8 @@ class LearnerD3PG(object):
         self.value_criterion = nn.MSELoss()
 
     def ddpg_update(self, batch, min_value=-np.inf, max_value=np.inf):
+        self.logger.scalar_summary("global_episode", self.global_episode.value)
+
         state, action, reward, next_state, done, _ = batch
 
         state = np.asarray(state)

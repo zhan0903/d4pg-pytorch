@@ -27,8 +27,8 @@ class Agent(object):
 
         self.actor_learner = actor_learner
         self.actor = create_actor(model_name=config['model'],
-                                  num_actions=config['action_dims'][0],
-                                  num_states=config['state_dims'][0],
+                                  num_actions=config['action_dims'],
+                                  num_states=config['state_dims'],
                                   hidden_size=config['dense_size'])
         # Logger
         log_path = f"{log_dir}/agent-{n_agent}.pkl"
@@ -80,7 +80,9 @@ class Agent(object):
                         discounted_reward += r_i * gamma
                         gamma *= self.config['discount_rate']
 
-                    replay_queue.put([state_0, action_0, discounted_reward, next_state, done, gamma])
+                    # TODO: looks not well
+                    if not stop_agent_event.value:
+                        replay_queue.put([state_0, action_0, discounted_reward, next_state, done, gamma])
 
                 state = next_state
                 episode_reward += reward
@@ -89,6 +91,7 @@ class Agent(object):
                     break
 
             # Log metrics
+            self.logger.scalar_summary("episode_local", self.local_episode)
             self.logger.scalar_summary("reward", episode_reward)
             self.logger.scalar_summary("episode_timing", time.time() - ep_start_time)
 
@@ -102,7 +105,7 @@ class Agent(object):
             replay_queue.get()
 
         # Save replay from the first agent only
-        if self.n_agent == 0:
+        if self.n_agent == 0 and self.config['env'].lower() != 'learntomove':
             self.save_replay_gif()
 
         print(f"Agent {self.n_agent} done.")
@@ -116,6 +119,7 @@ class Agent(object):
         for step in range(self.max_steps):
             action = self.actor.get_action(state)
             action = self.ou_noise.get_action(action, step)
+            print("Action: ", action, len(action))
             next_state, reward, done = self.env_wrapper.step(action)
             img = self.env_wrapper.render()
             plt.imsave(fname=f"{dir_name}/{step}.png", arr=img)
