@@ -30,6 +30,8 @@ class Agent(object):
                                   num_actions=config['action_dims'],
                                   num_states=config['state_dims'],
                                   hidden_size=config['dense_size'])
+        self.actor.eval()
+
         # Logger
         log_path = f"{log_dir}/agent-{n_agent}.pkl"
         self.logger = Logger(log_path)

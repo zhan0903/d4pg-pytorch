@@ -24,7 +24,9 @@ class ValueNetwork(nn.Module):
         """
         super(ValueNetwork, self).__init__()
 
+        self.bn1 = nn.BatchNorm1d(num_states + num_actions)
         self.linear1 = nn.Linear(num_states + num_actions, hidden_size)
+        self.bn2 = nn.BatchNorm1d(hidden_size)
         self.linear2 = nn.Linear(hidden_size, hidden_size)
         self.linear3 = nn.Linear(hidden_size, 1)
 
@@ -35,8 +37,8 @@ class ValueNetwork(nn.Module):
 
     def forward(self, state, action):
         x = torch.cat([state, action], 1)
-        x = F.relu(self.linear1(x))
-        x = F.relu(self.linear2(x))
+        x = F.relu(self.linear1(self.bn1(x)))
+        x = F.relu(self.linear2(self.bn2(x)))
         x = self.linear3(x)
         return x
 
@@ -55,7 +57,9 @@ class PolicyNetwork(nn.Module):
         super(PolicyNetwork, self).__init__()
         self.device = device
 
+        self.bn1 = nn.BatchNorm1d(num_states)
         self.linear1 = nn.Linear(num_states, hidden_size)
+        self.bn2 = nn.BatchNorm1d(hidden_size)
         self.linear2 = nn.Linear(hidden_size, hidden_size)
         self.linear3 = nn.Linear(hidden_size, num_actions)
 
@@ -65,8 +69,8 @@ class PolicyNetwork(nn.Module):
         self.to(device)
 
     def forward(self, state):
-        x = F.relu(self.linear1(state))
-        x = F.relu(self.linear2(x))
+        x = F.relu(self.linear1(self.bn1(state)))
+        x = F.relu(self.linear2(self.bn2(x)))
         x = F.tanh(self.linear3(x))
         return x
 

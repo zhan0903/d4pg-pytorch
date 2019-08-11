@@ -4,7 +4,7 @@ env: LearnToMove
 random_seed: 2019
 num_agents: 2
 visualize: 0
-state_dims: 829
+state_dims: 339
 action_dims: 22
 
 # Training parameters

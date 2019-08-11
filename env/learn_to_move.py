@@ -126,11 +126,11 @@ class LearnToMove(object):
     def __init__(self, config):
         self.config = config
         self.env = L2M2019Env(visualize=bool(config['visualize']))
-        self.project = False # False - dict of size 14, True - dict of size 4
+        self.project = True # False - dict of size 14, True - dict of size 4
         self.env.reset(project=self.project)
 
-        #self.observation_transformer = ObservationTransformer()
-        self.observation_transformer = ExtendedObservationTransformer()
+        self.observation_transformer = ObservationTransformer()
+        #self.observation_transformer = ExtendedObservationTransformer()
 
     def step(self, action):
         obs, reward, done, _ = self.env.step(action.flatten(), project=self.project)
