@@ -71,7 +71,7 @@ class PolicyNetwork(nn.Module):
     def forward(self, state):
         x = F.relu(self.linear1(self.bn1(state)))
         x = F.relu(self.linear2(self.bn2(x)))
-        x = F.tanh(self.linear3(x))
+        x = F.sigmoid(self.linear3(x))
         return x
 
     def get_action(self, state):
