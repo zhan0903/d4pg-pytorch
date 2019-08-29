@@ -6,6 +6,7 @@
 
 import numpy as np
 import random
+import redis
 
 from utils.segment_tree import SumSegmentTree, MinSegmentTree
 
@@ -201,9 +202,72 @@ class PrioritizedReplayBuffer(ReplayBuffer):
             self._max_priority = max(self._max_priority, priority)
 
 
+class RedisReplayBuffer(object):
+    def __init__(self, config):
+        self.state_inds = (0, config['state_dims'])
+        self.action_inds = (config['state_dims'], config['state_dims'] + config['action_dims'])
+        self.reward_inds = (self.action_inds[1], self.action_inds[1] + 1)
+        self.next_state_inds = (self.reward_inds[1], self.reward_inds[1] + config['state_dims'])
+        self.dones_inds = (self.next_state_inds[1], self.next_state_inds[1] + 1)
+        self.gammas_inds = (self.dones_inds[1], self.dones_inds[1] + 1)
+
+        # Run on server side
+        print("PARAMS: ", config['db_host'], config['db_port'])
+        self.r = redis.Redis(db=0, host=config['db_host'], port=config['db_port'])
+        if config['pretrain'] is not None:
+            print(f"Using existing replay buffer with {self.r.dbsize()} replays.")
+
+    def add(self, obs_t, action, reward, obs_tp1, done, gamma):
+        data = np.concatenate([obs_t, action, [reward], obs_tp1, [done], [gamma]], axis=0)
+        self._add_array(data)
+
+    def sample(self, batch_size):
+        states = []
+        actions = []
+        rewards = []
+        next_states = []
+        dones = []
+        gammas = []
+
+        # Warning: may be too slow
+        keys = [self.r.randomkey() for _ in range(int(batch_size))]
+        replays = self.r.mget(keys)
+
+        for replay in replays:
+            replay = self._convert_string(replay)
+
+            states.append(replay[self.state_inds[0]:self.state_inds[1]])
+            actions.append(replay[self.action_inds[0]:self.action_inds[1]])
+            rewards.append(replay[self.reward_inds[0]:self.reward_inds[1]])
+            next_states.append(replay[self.next_state_inds[0]:self.next_state_inds[1]])
+            dones.append(replay[self.dones_inds[0]:self.dones_inds[1]])
+            gammas.append(replay[self.gammas_inds[0]:self.gammas_inds[1]])
+
+        states = np.asarray(states)
+        actions = np.asarray(actions)
+        rewards = np.asarray(rewards).reshape([batch_size, 1])
+        next_states = np.asarray(next_states)
+        dones = np.asarray(dones).reshape([batch_size, 1])
+        gammas = np.asarray(gammas).reshape([batch_size, 1])
+
+        return states, actions, rewards, next_states, dones, gammas
+
+    def _add_array(self, d):
+        d = d.astype('float16').tostring()
+        key = str(self.r.dbsize())
+        self.r.set(key, d)
+
+    def _convert_string(self, A1):
+        return np.fromstring(A1, dtype='float16')
+
+    def __len__(self):
+        return self.r.dbsize()
+
+
 def create_replay_buffer(config):
-    size = config['replay_mem_size']
-    if config['replay_memory_prioritized']:
-        alpha = config['priority_alpha']
-        return PrioritizedReplayBuffer(size=size, alpha=alpha)
-    return ReplayBuffer(size)
+    #size = config['replay_mem_size']
+    #if config['replay_memory_prioritized']:
+    #    alpha = config['priority_alpha']
+    #    return PrioritizedReplayBuffer(size=size, alpha=alpha)
+    #return ReplayBuffer(size)
+    return RedisReplayBuffer(config)

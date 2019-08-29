@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class Logger(object):
 
-    def __init__(self, log_path, server='localhost', env='main', port=8097):
+    def __init__(self, log_path):
         """
         General logger.
 
@@ -27,7 +27,6 @@ class Logger(object):
         self.debug = logger.debug
         self.warning = logger.warning
         self.log_name = log_path[log_path.rfind('/')+1:]
-        self.scalar_meter = MeterLogger(server=server, env=env, port=port)
 
     def scalar_summary(self, tag, value):
         """
@@ -37,6 +36,5 @@ class Logger(object):
             value (float): value
         """
         plot_name = f"{self.log_name}-{tag}"
-        self.scalar_meter.update_loss(torch.from_numpy(np.asarray(value)).unsqueeze(0), meter=plot_name)
         self.writer.update(tag, value)
 

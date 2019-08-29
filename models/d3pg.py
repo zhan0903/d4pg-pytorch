@@ -70,7 +70,7 @@ class PolicyNetwork(nn.Module):
         x = F.relu(self.linear2(x))
         x = F.tanh(self.linear3(x))
 
-        x = 0.5 * x * (2 - (-2))
+        #x = 0.5 * x * (2 - (-2))
 
         return x
 
@@ -129,25 +129,22 @@ class LearnerD3PG(object):
 
         self.value_criterion = nn.MSELoss(reduction='none')
 
-    def ddpg_update(self, batch, replay_priority_queue, update_step, min_value=-np.inf, max_value=np.inf):
+    def ddpg_update(self, batch, update_step, min_value=-np.inf, max_value=np.inf):
         self.logger.scalar_summary("update_step", update_step.value)
 
-        state, action, reward, next_state, done, gammas, weights, inds = batch
+        state, action, reward, next_state, done, gammas = batch
 
         state = np.asarray(state)
         action = np.asarray(action)
         reward = np.asarray(reward)
         next_state = np.asarray(next_state)
         done = np.asarray(done)
-        weights = np.asarray(weights)
-        inds = np.asarray(inds)
 
         state = torch.from_numpy(state).float().to(self.device)
         next_state = torch.from_numpy(next_state).float().to(self.device)
         action = torch.from_numpy(action).float().to(self.device)
-        reward = torch.from_numpy(reward).float().unsqueeze(1).to(self.device)
-        done = torch.from_numpy(done).float().unsqueeze(1).to(self.device)
-        weights = torch.from_numpy(weights).float().unsqueeze(1).to(self.device)
+        reward = torch.from_numpy(reward).float().to(self.device)
+        done = torch.from_numpy(done).float().to(self.device)
 
         # ------- Update critic -------
 
@@ -161,12 +158,6 @@ class LearnerD3PG(object):
         #print("Value loss: ", value_loss.shape)
 
         # Update priorities in buffer
-        td_error = value_loss.cpu().detach().numpy()
-        priority_epsilon = 1e-4
-        if self.prioritized_replay:
-            weights = np.abs(td_error) + priority_epsilon
-            replay_priority_queue.put((inds, weights))
-
         value_loss = value_loss.mean()
 
         self.logger.scalar_summary("value_loss", value_loss.item())
@@ -196,14 +187,14 @@ class LearnerD3PG(object):
                 target_param.data * (1.0 - self.tau) + param.data * self.tau
             )
 
-    def run(self, training_on, batch_queue, replay_priority_queue, update_step):
+    def run(self, training_on, batch_queue, update_step):
         while update_step.value < self.num_train_steps:
             if batch_queue.empty():
                 continue
             batch = batch_queue.get()
 
             update_time = time.time()
-            self.ddpg_update(batch, replay_priority_queue, update_step)
+            self.ddpg_update(batch, update_step)
             self.logger.scalar_summary("learner_update_timing", time.time() - update_time)
 
             update_step.value += 1

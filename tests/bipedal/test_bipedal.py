@@ -10,7 +10,7 @@ class TestsPendulum(unittest.TestCase):
         config['model'] = 'd3pg'
         config['num_agents'] = 2
 
-        train(CONFIG_PATH, config=config)
+        train(config=config)
 
     #def test_d4pg_train(self):
     #    config = read_config("tests/pendulum/config.yml")

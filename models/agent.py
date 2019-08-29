@@ -9,6 +9,7 @@ from .utils import create_actor
 from utils.utils import OUNoise, make_gif
 from env.utils import create_env_wrapper
 from utils.logger import Logger
+from utils.prioritized_experience_replay import create_replay_buffer
 
 
 class Agent(object):
@@ -45,9 +46,10 @@ class Agent(object):
         for target_param, param in zip(target.parameters(), source.parameters()):
             target_param.data.copy_(param.data)
 
-    def run(self, training_on, replay_queue, update_step):
+    def run(self, training_on, update_step):
         # Initialise deque buffer to store experiences for N-step returns
         self.exp_buffer = deque()
+        replay_buffer = create_replay_buffer(self.config)
 
         rewards = []
         while training_on.value:
@@ -87,10 +89,7 @@ class Agent(object):
                         discounted_reward += r_i * gamma
                         gamma *= self.config['discount_rate']
 
-                    if not replay_queue.full():
-                        replay_queue.put([state_0, action_0, discounted_reward, next_state, done, gamma])
-                    #else:
-                    #    print("QUEUE IS FULL! ", update_step.value)
+                    replay_buffer.add(state_0, action_0, discounted_reward, next_state, done, gamma)
 
                 state = next_state
 
@@ -105,7 +104,7 @@ class Agent(object):
                             gamma *= self.config['discount_rate']
 
                         # If learner is requesting a pause (to remove samples from PER), wait before adding more samples
-                        replay_queue.put([state_0, action_0, discounted_reward, next_state, done, gamma])
+                        replay_buffer.add(state_0, action_0, discounted_reward, next_state, done, gamma)
                     break
 
                 num_steps += 1
@@ -120,8 +119,6 @@ class Agent(object):
                 self.update_actor_learner()
 
         print("Emptying replay queue")
-        while not replay_queue.empty():
-            replay_queue.get()
 
         # Save replay from the first agent only
         if self.n_agent == 0:
