@@ -66,7 +66,7 @@ class LearnerD4PG(object):
         action = np.asarray(action)
         reward = np.asarray(reward)
         next_state = np.asarray(next_state)
-        done = np.asarray(done, dtype=np.uint8)
+        done = np.asarray(done)
         weights = np.asarray(weights)
         inds = np.asarray(inds).flatten()
 
@@ -75,6 +75,7 @@ class LearnerD4PG(object):
         action = torch.from_numpy(action).float().to(self.device)
         reward = torch.from_numpy(reward).float().to(self.device)
         done = torch.from_numpy(done).float().to(self.device)
+        print("done",done)
 
         # ------- Update critic -------
 
