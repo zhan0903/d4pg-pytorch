@@ -66,7 +66,7 @@ class LearnerD4PG(object):
         action = np.asarray(action)
         reward = np.asarray(reward)
         next_state = np.asarray(next_state)
-        done = np.asarray(done)
+        done = np.asarray(done, dtype=np.uint8)
         weights = np.asarray(weights)
         inds = np.asarray(inds).flatten()
 
