@@ -55,7 +55,9 @@ class Agent(object):
         best_reward = -float("inf")
         rewards = []
         all_steps = 0
-        while all_steps < 500000:
+        i = 0
+        time_start = time.time()
+        while all_steps < 300000:
             episode_reward = 0
             num_steps = 0
             self.local_episode += 1
@@ -126,9 +128,10 @@ class Agent(object):
             step = update_step.value
             self.logger.scalar_summary("agent/reward", episode_reward, step)
             # print("reward",episode_reward,"step",step)
-            if all_steps % 5000 == 0:
+            if all_steps // 5000 >= i:
+                i += 1
                 print("reward",episode_reward,"all_steps",all_steps)
-
+                print("time",int(time.time()-time_start))
 
             self.logger.scalar_summary("agent/episode_timing", time.time() - ep_start_time, step)
 
