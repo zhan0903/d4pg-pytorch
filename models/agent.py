@@ -77,6 +77,7 @@ class Agent(object):
                 else:
                     action = action.detach().cpu().numpy().flatten()
                 next_state, reward, done = self.env_wrapper.step(action)
+                all_steps += 1
 
                 episode_reward += reward
 
@@ -120,12 +121,15 @@ class Agent(object):
                     break
 
                 num_steps += 1
-                all_steps += 1
 
             # Log metrics
             step = update_step.value
             self.logger.scalar_summary("agent/reward", episode_reward, step)
-            print("reward",episode_reward,"step",step)
+            # print("reward",episode_reward,"step",step)
+            if all_steps % 5000 == 0:
+                print("reward",episode_reward,"all_steps",all_steps)
+
+
             self.logger.scalar_summary("agent/episode_timing", time.time() - ep_start_time, step)
 
             # Saving agent
