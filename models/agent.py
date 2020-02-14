@@ -54,7 +54,8 @@ class Agent(object):
 
         best_reward = -float("inf")
         rewards = []
-        while training_on.value:
+        all_steps = 0
+        while all_steps < 500000:
             episode_reward = 0
             num_steps = 0
             self.local_episode += 1
@@ -119,10 +120,12 @@ class Agent(object):
                     break
 
                 num_steps += 1
+                all_steps += 1
 
             # Log metrics
             step = update_step.value
             self.logger.scalar_summary("agent/reward", episode_reward, step)
+            print("reward",episode_reward,"step",step)
             self.logger.scalar_summary("agent/episode_timing", time.time() - ep_start_time, step)
 
             # Saving agent
@@ -137,6 +140,8 @@ class Agent(object):
             rewards.append(episode_reward)
             if self.agent_type == "exploration" and self.local_episode % self.config['update_agent_ep'] == 0:
                 self.update_actor_learner(learner_w_queue, training_on)
+
+
 
         empty_torch_queue(replay_queue)
         print(f"Agent {self.n_agent} done.")
