@@ -57,7 +57,7 @@ class Agent(object):
         all_steps = 0
         i = 0
         time_start = time.time()
-        while all_steps < 300000:
+        while all_steps < 1000000:
             episode_reward = 0
             num_steps = 0
             self.local_episode += 1
