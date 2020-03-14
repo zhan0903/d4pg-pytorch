@@ -75,7 +75,7 @@ class LearnerD4PG(object):
         action = torch.from_numpy(action).float().to(self.device)
         reward = torch.from_numpy(reward).float().to(self.device)
         done = torch.from_numpy(done).float().to(self.device)
-        print("done",done)
+        # print("done",done)
 
         # ------- Update critic -------
 
